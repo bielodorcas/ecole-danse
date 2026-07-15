@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 
 function App() {
   const [page, setPage] = useState("dashboard");
@@ -46,6 +47,48 @@ const [rechercheEleve, setRechercheEleve] = useState("");
 const [seances, setSeances] = useState(() =>
   JSON.parse(localStorage.getItem("seances") || "[]")
 );
+
+const importerElevesExcel = (event) => {
+  const fichier = event.target.files[0];
+
+  const lecteur = new FileReader();
+
+  lecteur.onload = (e) => {
+    const donnees = new Uint8Array(
+      e.target.result
+    );
+
+    const workbook = XLSX.read(donnees, {
+      type: "array",
+    });
+
+    const feuille =
+      workbook.Sheets[
+        workbook.SheetNames[0]
+      ];
+
+    const json =
+      XLSX.utils.sheet_to_json(feuille);
+
+    const nouveauxEleves = json.map(
+      (ligne) => ({
+        id: Date.now() + Math.random(),
+        nom: ligne.Nom || "",
+        prenom: ligne.Prénom || "",
+        telephone:
+          ligne.Téléphone || "",
+        email: ligne.Email || "",
+      })
+    );
+
+    setEleves([
+      ...eleves,
+      ...nouveauxEleves,
+    ]);
+  };
+
+  lecteur.readAsArrayBuffer(fichier);
+};
 
 
 const [presenceSession, setPresenceSession] =
@@ -304,6 +347,13 @@ const elevesFiltres = eleves.filter((e) =>
       {page === "eleves" && (
         <div>
           <h2>Gestion des élèves</h2>
+           
+<input
+  type="file"
+  accept=".xlsx,.xls"
+  onChange={importerElevesExcel}
+  style={{ marginBottom: "15px" }}
+/>
           <input
   type="text"
   placeholder="🔍 Rechercher un élève"
@@ -317,6 +367,8 @@ const elevesFiltres = eleves.filter((e) =>
     width: "300px",
   }}
 />
+
+
 
           <input
             placeholder="Nom"
@@ -677,7 +729,7 @@ const elevesFiltres = eleves.filter((e) =>
       👤 {eleveActif.prenom} {eleveActif.nom}
     </h2>
 
-    <button
+       <button
       onClick={() => setPage("eleves")}
     >
       ← Retour
