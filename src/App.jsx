@@ -133,6 +133,119 @@ const importerCoursExcel = (event) => {
   lecteur.readAsArrayBuffer(fichier);
 };
 
+const importerSaisonComplete = (event) => {
+  const fichier = event.target.files[0];
+
+  if (!fichier) return;
+
+  const lecteur = new FileReader();
+
+  lecteur.onload = (e) => {
+    const donnees = new Uint8Array(
+      e.target.result
+    );
+
+    const workbook = XLSX.read(donnees, {
+      type: "array",
+    });
+
+    // ===== ÉLÈVES =====
+
+    const feuilleEleves =
+      workbook.Sheets["Eleves"];
+
+    const elevesExcel =
+      XLSX.utils.sheet_to_json(
+        feuilleEleves
+      );
+
+    const nouveauxEleves =
+      elevesExcel.map((ligne) => ({
+        id: Date.now() + Math.random(),
+        nom: ligne.Nom || "",
+        prenom: ligne.Prénom || "",
+        telephone:
+          ligne.Téléphone || "",
+        email: ligne.Email || "",
+      }));
+
+    // ===== COURS =====
+
+    const feuilleCours =
+      workbook.Sheets["Cours"];
+
+    const coursExcel =
+      XLSX.utils.sheet_to_json(
+        feuilleCours
+      );
+
+    const nouveauxCours =
+      coursExcel.map((ligne) => ({
+        id: Date.now() + Math.random(),
+        nom: ligne.NomCours || "",
+        professeur:
+          ligne.Professeur || "",
+        jour: ligne.Jour || "",
+        heure: ligne.Heure || "",
+      }));
+
+    // Sauvegarde temporaire
+    setEleves(nouveauxEleves);
+    setCours(nouveauxCours);
+
+    // ===== INSCRIPTIONS =====
+
+    const feuilleInscriptions =
+      workbook.Sheets["Inscriptions"];
+
+    const inscriptionsExcel =
+      XLSX.utils.sheet_to_json(
+        feuilleInscriptions
+      );
+
+    const nouvellesInscriptions =
+      [];
+
+    inscriptionsExcel.forEach(
+      (ligne) => {
+        const eleve =
+          nouveauxEleves.find(
+            (e) =>
+              e.nom === ligne.Nom &&
+              e.prenom ===
+                ligne.Prénom
+          );
+
+        const coursTrouve =
+          nouveauxCours.find(
+            (c) =>
+              c.nom === ligne.Cours
+          );
+
+        if (eleve && coursTrouve) {
+          nouvellesInscriptions.push({
+            id:
+              Date.now() +
+              Math.random(),
+            eleveId: eleve.id,
+            coursId: coursTrouve.id,
+          });
+        }
+      }
+    );
+
+    setInscriptions(
+      nouvellesInscriptions
+    );
+
+    alert(
+      "Import terminé avec succès !"
+    );
+  };
+
+  lecteur.readAsArrayBuffer(fichier);
+};
+
 const [presenceSession, setPresenceSession] =
   useState({});
   
@@ -374,6 +487,16 @@ const elevesFiltres = eleves.filter((e) =>
           <p>Cours : {cours.length}</p>
           <p>Inscriptions : {inscriptions.length}</p>
           <p>Présences : {absences.length}</p>
+
+          <h3>
+  📥 Import complet de la saison
+</h3>
+
+<input
+  type="file"
+  accept=".xlsx,.xls"
+  onChange={importerSaisonComplete}
+/>
 
           <button
             onClick={() => {
