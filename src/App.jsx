@@ -86,10 +86,52 @@ const importerElevesExcel = (event) => {
       ...nouveauxEleves,
     ]);
   };
+  
 
   lecteur.readAsArrayBuffer(fichier);
 };
 
+const importerCoursExcel = (event) => {
+  const fichier = event.target.files[0];
+
+  const lecteur = new FileReader();
+
+  lecteur.onload = (e) => {
+    const donnees = new Uint8Array(
+      e.target.result
+    );
+
+    const workbook = XLSX.read(donnees, {
+      type: "array",
+    });
+
+    const feuille =
+      workbook.Sheets[
+        workbook.SheetNames[0]
+      ];
+
+    const json =
+      XLSX.utils.sheet_to_json(feuille);
+
+    const nouveauxCours = json.map(
+      (ligne) => ({
+        id: Date.now() + Math.random(),
+        nom: ligne.NomCours || "",
+        professeur:
+          ligne.Professeur || "",
+        jour: ligne.Jour || "",
+        heure: ligne.Heure || "",
+      })
+    );
+
+    setCours([
+      ...cours,
+      ...nouveauxCours,
+    ]);
+  };
+
+  lecteur.readAsArrayBuffer(fichier);
+};
 
 const [presenceSession, setPresenceSession] =
   useState({});
@@ -434,6 +476,15 @@ const elevesFiltres = eleves.filter((e) =>
       {page === "cours" && (
         <div>
           <h2>Gestion des cours</h2>
+
+          <h3>📥 Import des cours</h3>
+
+<input
+  type="file"
+  accept=".xlsx,.xls"
+  onChange={importerCoursExcel}
+  style={{ marginBottom: "15px" }}
+/>
 
           <input
             placeholder="Nom du cours"
